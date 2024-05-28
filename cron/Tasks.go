@@ -1,8 +1,12 @@
 package cron
 
 import (
-  "encoding/json"
+  "context"
+  "fmt"
+  "github.com/Kawanishi45/demo_embedding/helper"
+  "github.com/sashabaranov/go-openai"
   "log"
+  "os"
   "time"
 )
 
@@ -31,14 +35,14 @@ func (s *Server) VectorizeChunks() {
     }
 
     for _, chunk := range chunks {
-      var vector string
+      var vector []float32
       vector, err = GetEmbeddingVector(chunk.ChunkText)
       if err != nil {
         log.Println("Error getting embedding vector:", err)
         continue
       }
 
-      _, err = s.DB.Exec("UPDATE embeddings SET embedding = $1 WHERE id = $2", vector, chunk.ID)
+      _, err = s.DB.Exec("UPDATE embeddings SET embedding = $1 WHERE id = $2", helper.Vector(vector), chunk.ID)
       if err != nil {
         log.Println("Error updating embedding:", err)
         continue
@@ -50,20 +54,28 @@ func (s *Server) VectorizeChunks() {
 }
 
 // GetEmbeddingVector テキストをベクトル化し、JSON形式で返す関数
-func GetEmbeddingVector(text string) (string, error) {
-  // OpenAIのAPIを使用してtextをベクトル化するコードを実装
-  // ここでは仮のコードを使用
-  vector := make([]float32, 768) // 例: 768次元のベクトル
-
-  // 例として、ベクトルの一部を埋めます（実際にはAPIから取得）
-  for i := range vector {
-    vector[i] = float32(i)
+func GetEmbeddingVector(text string) ([]float32, error) {
+  apiKey := os.Getenv("OPENAI_API_KEY")
+  if apiKey == "" {
+    return nil, fmt.Errorf("OPENAI_API_KEY is not set")
   }
 
-  // []float32をJSON文字列に変換
-  vectorJSON, err := json.Marshal(vector)
+  client := openai.NewClient(apiKey)
+
+  req := openai.EmbeddingRequest{
+    Model: openai.AdaEmbeddingV2, // 適切なモデルを選択
+    Input: []string{text},
+  }
+
+  resp, err := client.CreateEmbeddings(context.Background(), req)
   if err != nil {
-    return "", err
+    return nil, err
   }
-  return string(vectorJSON), nil
+
+  if len(resp.Data) == 0 {
+    return nil, fmt.Errorf("no embedding response from OpenAI")
+  }
+
+  embedding := resp.Data[0].Embedding
+  return embedding, nil
 }
