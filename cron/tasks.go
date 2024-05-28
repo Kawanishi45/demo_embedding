@@ -23,7 +23,7 @@ func (s *Server) VectorizeChunks() {
         ID        int    `db:"id"`
         ChunkText string `db:"chunk_text"`
       }
-      if err := rows.StructScan(&chunk); err != nil {
+      if err = rows.StructScan(&chunk); err != nil {
         log.Println("Error scanning chunk:", err)
         continue
       }
