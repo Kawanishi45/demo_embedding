@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Document and Question Interface</title>
+</head>
+<body>
+<h1>Add Document</h1>
+<form id="document-form">
+    <label for="title">Title:</label>
+    <input type="text" id="title" name="title"><br><br>
+    <label for="author">Author:</label>
+    <input type="text" id="author" name="author"><br><br>
+    <label for="content">Content:</label>
+    <textarea id="content" name="content"></textarea><br><br>
+    <input type="button" value="Submit" onclick="submitDocument()">
+</form>
+
+<h1>Ask a Question</h1>
+<form id="question-form">
+    <label for="question">Question:</label>
+    <input type="text" id="question" name="question"><br><br>
+    <input type="button" value="Ask" onclick="askQuestion()">
+</form>
+
+<h2>Response</h2>
+<div id="response"></div>
+
+<script>
+  function submitDocument() {
+    const form = document.getElementById('document-form');
+    const data = {
+      title: form.title.value,
+      author: form.author.value,
+      content: form.content.value
+    };
+
+    fetch('http://localhost:8080/add_document', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    })
+      .then(response => response.json())
+      .then(data => {
+        alert('Document added');
+        form.reset();
+      })
+      .catch(error => {
+        console.error('Error:', error);
+      });
+  }
+
+  function askQuestion() {
+    const form = document.getElementById('question-form');
+    const data = {
+      text: form.question.value
+    };
+
+    fetch('http://localhost:8080/ask_question', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    })
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById('response').innerText = `Prompt:\n${data.prompt}\n\nResponse:\n${data.response}`;
+      })
+      .catch(error => {
+        console.error('Error:', error);
+      });
+  }
+</script>
+</body>
+</html>
